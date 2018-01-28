@@ -9,8 +9,9 @@
 #ifndef FPS_GT511C3_h
 #define FPS_GT511C3_h
 
-#include "Arduino.h"
-#include "HardwareSerial.h"
+#include <Arduino.h>
+#include <HardwareSerial.h>
+
 #ifndef __GNUC__
 #pragma region -= Command_Packet =-
 #endif  //__GNUC__
@@ -178,7 +179,7 @@ class FPS_GT511C3
 	#pragma region -= Constructor/Destructor =-
 #endif  //__GNUC__
 	// Creates a new object to interface with the fingerprint scanner
-	FPS_GT511C3(uint8_t rx, uint8_t tx);
+	FPS_GT511C3(unsigned long baud,int uart_nr);
 	
 	// destructor
 	~FPS_GT511C3();

@@ -7,6 +7,7 @@
 */
 
 #include "FPS_GT511C3.h"
+#include <HardwareSerial.h>
 
 #ifndef __GNUC__
 #pragma region -= Command_Packet Definitions =-
@@ -232,11 +233,10 @@ bool Response_Packet::CheckParsing(byte b, byte propervalue, byte alternatevalue
 #pragma region -= Constructor/Destructor =-
 #endif  //__GNUC__
 // Creates a new object to interface with the fingerprint scanner
-FPS_GT511C3::FPS_GT511C3(unsigned long baud)
+FPS_GT511C3::FPS_GT511C3(unsigned long baud, int uart_nr): _serial(uart_nr)
 {
 	// using uart2 in esp32
 	// rx_pin 16 rx_pin 17
-	_serial.HarwareSerial(2);
 	_serial.begin(baud);
 	this->UseSerialDebug = false;
 };
@@ -758,7 +758,7 @@ Response_Packet* FPS_GT511C3::GetResponse()
 {
 	byte firstbyte = 0;
 	bool done = false;
-	_serial.listen();
+	//_serial.listen();
 	while (done == false)
 	{
 		firstbyte = (byte)_serial.read();
