@@ -233,17 +233,20 @@ bool Response_Packet::CheckParsing(byte b, byte propervalue, byte alternatevalue
 #pragma region -= Constructor/Destructor =-
 #endif  //__GNUC__
 // Creates a new object to interface with the fingerprint scanner
-FPS_GT511C3::FPS_GT511C3(unsigned long baud, int uart_nr): _serial(uart_nr)
+FPS_GT511C3::FPS_GT511C3(unsigned long baud, int uart_nr):_serial(uart_nr)
 {
 	// using uart2 in esp32
 	// rx_pin 16 rx_pin 17
-	_serial.begin(baud);
+	_serial.flush();
+	_serial.begin(9600, SERIAL_8N1);
 	this->UseSerialDebug = false;
+
 };
 
 // destructor
 FPS_GT511C3::~FPS_GT511C3()
 {
+	_serial.end();
 	//_serial.~SoftwareSerial();
 }
 #ifndef __GNUC__
@@ -256,7 +259,17 @@ FPS_GT511C3::~FPS_GT511C3()
 //Initialises the device and gets ready for commands
 void FPS_GT511C3::Open()
 {
-	if (UseSerialDebug) Serial.println("FPS - Open");
+	if (UseSerialDebug) 
+	{
+		Serial.println("FPS - Open");
+		Serial.print("Uart port: ");
+		Serial.println(_serial.getUartNum());
+		Serial.print("rx Pin: ");
+		Serial.println(_serial.getRxPin());
+		Serial.print("Tx Pin: ");
+		Serial.println(_serial.getTxPin());
+	}
+	
 	Command_Packet* cp = new Command_Packet();
 	cp->Command = Command_Packet::Commands::Open;
 	cp->Parameter[0] = 0x00;
@@ -332,21 +345,31 @@ bool FPS_GT511C3::ChangeBaudRate(unsigned long baud)
 
 		if (UseSerialDebug) Serial.println("FPS - ChangeBaudRate");
 		Command_Packet* cp = new Command_Packet();
-		cp->Command = Command_Packet::Commands::Open;
+		cp->Command = Command_Packet::Commands::ChangeEBaudRate;
 		cp->ParameterFromInt(baud);
 		byte* packetbytes = cp->GetPacketBytes();
 		delete cp;
+
+		/*if (UseSerialDebug)
+		{
+			Serial.print("FPS - SEND: ");
+			SendToSerial(packetbytes, 12);
+			Serial.println();
+		}*/
 		SendCommand(packetbytes, 12);
 		Response_Packet* rp = GetResponse();
 		bool retval = rp->ACK;
 		if (retval)
 		{
-			_serial.end();
-			_serial.begin(baud);
+			Serial.println("changing finger print baudrate");
+			_serial.flush();
+			_serial.changeBaud(baud);
+			delay(100);
 		}
 		delete rp;
 		delete packetbytes;
 		return retval;
+		//return true;
 	}
 	return false;
 }
@@ -761,7 +784,10 @@ Response_Packet* FPS_GT511C3::GetResponse()
 	//_serial.listen();
 	while (done == false)
 	{
-		firstbyte = (byte)_serial.read();
+		int temp;
+		temp = _serial.read();
+		firstbyte=(byte)temp;
+		//Serial.println(temp);
 		if (firstbyte == Response_Packet::COMMAND_START_CODE_1)
 		{
 			done = true;
